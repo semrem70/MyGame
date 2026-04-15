@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кто хочет стать миллионером?</title>
+    <style>
+        body {
+            background-color: #000033;
+            background: radial-gradient(circle, #000066 0%, #000022 100%);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container, #start-screen {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Приветственная страница */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #5555ff 0%, #000033 100%);
+            border: 5px solid #d4af37;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5em;
+            box-shadow: 0 0 30px #5555ff;
+        }
+
+        .start-btn {
+            background: #d4af37;
+            color: black;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #d4af37;
+        }
+
+        /* Основная игра (скрыта в начале) */
+        #game-container { display: none; }
+
+        .info-panel { color: #d4af37; font-size: 1.2em; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+        #question-box {
+            background: linear-gradient(90deg, transparent 0%, #000088 50%, transparent 100%);
+            border-top: 2px solid #5555ff; border-bottom: 2px solid #5555ff;
+            padding: 30px; margin-bottom: 40px; font-size: 1.5em;
+        }
+        #options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .option-btn {
+            background: black; border: 1px solid #5555ff; border-radius: 40px;
+            padding: 15px 20px; color: white; font-size: 1.1em; cursor: pointer;
+            text-align: left; transition: all 0.2s; outline: none;
+        }
+        .option-btn:hover:not(:disabled) { background: #1111aa; border-color: #d4af37; }
+        .option-btn b { color: #d4af37; margin-right: 10px; }
+        .correct { background: #27ae60 !important; color: white !important; }
+        .wrong { background: #cc0000 !important; opacity: 0.7; }
+        .pending { background: #d4af37 !important; color: black !important; }
+        #message { margin-top: 20px; font-size: 1.2em; color: #ff4444; height: 30px; }
+    </style>
+</head>
+<body>
+
+<!-- ЭКРАН ПРИВЕТСТВИЯ -->
+<div id="start-screen">
+    <div class="logo">💰</div>
+    <h1>КТО ХОЧЕТ СТАТЬ МИЛЛИОНЕРОМ?</h1>
+    <p>Как хорошо вы знаете юбиляра?</p>
+    <button class="start-btn" onclick="startGame()">Начать игру</button>
+</div>
+
+<!-- ИГРОВОЙ КОНТЕЙНЕР -->
+<div id="game-container">
+    <div class="info-panel" id="level-indicator">Вопрос 1 из ...</div>
+    <div id="question-box"><span id="question-text"></span></div>
+    <div id="options-grid"></div>
+    <div id="message"></div>
+</div>
+
+<script>
+    const sounds = {
+        wait: new Audio('https://soundjay.com'),
+        correct: new Audio('https://myinstants.com'),
+        wrong: new Audio('https://myinstants.com'),
+        win: new Audio('https://myinstants.com')
+    };
+
+    const quizData = [
+        { q: "Где родился именинник?", options: ["Гари", "Полевской", "Лопатково", "Сосьва"], correct: 2 },
+        { q: "Как официально называется столица Японии?", options: ["Киото", "Осака", "Токио", "Сеул"], correct: 2 },
+        { q: "В каком году произошел первый полет человека в космос?", options: ["1957", "1961", "1965", "1969"], correct: 1 }
+    ];
+
+    let currentStep = 0;
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'block';
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const data = quizData[currentStep];
+        document.getElementById('level-indicator').innerText = `Вопрос ${currentStep + 1} из ${quizData.length}`;
+        document.getElementById('question-text').innerText = data.q;
+        document.getElementById('options-grid').innerHTML = '';
+        document.getElementById('message').innerText = '';
+
+        data.options.forEach((text, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<b>${String.fromCharCode(65 + idx)}:</b> ${text}`;
+            btn.onclick = () => checkAnswer(idx, btn);
+            document.getElementById('options-grid').appendChild(btn);
+        });
+    }
+
+    function checkAnswer(chosenIdx, clickedBtn) {
+        const correctIdx = quizData[currentStep].correct;
+        const allBtns = document.querySelectorAll('.option-btn');
+
+        allBtns.forEach(b => b.disabled = true);
+        clickedBtn.classList.add('pending');
+        sounds.wait.play();
+
+        setTimeout(() => {
+            if (chosenIdx === correctIdx) {
+                sounds.correct.play();
+                clickedBtn.classList.replace('pending', 'correct');
+                
+                setTimeout(() => {
+                    currentStep++;
+                    if (currentStep < quizData.length) {
+                        loadQuestion();
+                    } else {
+                        sounds.win.play();
+                        showWin();
+                    }
+                }, 1500);
+            } else {
+                sounds.wrong.play();
+                clickedBtn.classList.replace('pending', 'wrong');
+                document.getElementById('message').innerText = "Неверно! Попробуйте еще раз.";
+                
+                setTimeout(() => {
+                    allBtns.forEach(b => {
+                        if (!b.classList.contains('wrong')) b.disabled = false;
+                    });
+                }, 1000);
+            }
+        }, 1200);
+    }
+
+    function showWin() {
+        document.getElementById('game-container').innerHTML = `
+            <div style="color: #d4af37;">
+                <h1>ПОБЕДА! 💰</h1>
+                <p style="font-size: 1.5em">Вы ответили на все вопросы!</p>
+                <button class="start-btn" onclick="location.reload()">Играть снова</button>
+            </div>`;
+    }
+</script>
+
+</body>
+</html>
